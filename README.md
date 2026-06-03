@@ -9,9 +9,9 @@ Built with n8n, Qdrant, and OpenAI.
 [
 
 ![Watch the demo]
-https://img.youtube.com/vi/h10HkO8-b8w/0.jpg
+(https://img.youtube.com/vi/h10HkO8-b8w/0.jpg)
 
-]https://www.youtube.com/watch?v=h10HkO8-b8w
+](https://www.youtube.com/watch?v=h10HkO8-b8w)
 
 ## How It Works
 
