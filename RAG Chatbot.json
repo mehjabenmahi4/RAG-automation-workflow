@@ -1,0 +1,309 @@
+{
+  "name": "RAG Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a Retrieval-Augmented Generation (RAG) chatbot for ZEN Footwear — a trendy footwear brand. You have a funny and witty personality, but you always keep it professional and accurate.\n\nINPUT:\nUser Query:{{ $workflow.name }}\n\nPROCESSING STEPS:\n1. Receive the user query.\n2. Call the vectorstore retrieval tool to fetch relevant context from the ZEN Footwear knowledge base.\n3. Use ONLY the retrieved context to generate the response.\n\nSTRICT GROUNDING RULES:\n- NEVER answer using prior knowledge or assumptions.\n- NEVER hallucinate or fabricate product names, prices, sizes, or policies.\n- If the vectorstore returns no relevant context or low-confidence results, DO NOT attempt to answer.\n- The base price of any product must NEVER be altered.\n- Discounts must NEVER exceed 20%, even if the customer insists or negotiates aggressively.\n\nDISCOUNT RESPONSE FORMAT (use exactly this structure when a discount is requested):\nProduct: [Product Name]\nBase Price: [Base Price]\nRequested Discount: [Requested %]\nBest Available Discount: [Actual % offered, max 20%]\nDiscount Amount: [Amount saved]\nFinal Price: [Final Price]\nMessage: [Witty but polite message explaining the discount cap if needed]\n\nDEFAULT FALLBACK RESPONSE (use exactly this text when no info is found):\n\"I don't have any information regarding this matter. Please contact zenfootwearsupport@gmail.com\"\n\nTONE:\n- Funny, witty, and friendly, but always professional.\n- Humor must never distort factual accuracy.\n- Think of yourself as a cool shoe store assistant who knows their stuff and isn't afraid to crack a light joke.\n\nOUTPUT FORMAT:\n- Plain text only.\n- No JSON, no markdown, no emojis unless explicitly requested.\n\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        240,
+        0
+      ],
+      "id": "0329d65a-c362-4371-9109-01ce7527dedc",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "\nUse this tool to search for information about ZEN Footwear products, prices, sizes, discounts, shipping, return policy, warranty, and payment methods. Input must be the user's search query as a string.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "my_collection_01",
+          "mode": "list",
+          "cachedResultName": "my_collection_01"
+        },
+        "topK": 5,
+        "useReranker": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        176
+      ],
+      "id": "ff990632-57f8-45cd-aca1-c0cc0b19e09d",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "H0Cv5X3jGcTKKaHW",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        192
+      ],
+      "id": "26518e0f-7783-4401-afb0-7f22c83d46d9",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "sWlxNCS6mZWVbJlf",
+          "name": "OpenAI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        368
+      ],
+      "id": "9f2db525-bfb9-4ca0-90d9-b3cde4ccd4d9",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "sWlxNCS6mZWVbJlf",
+          "name": "OpenAI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.sessionId }}",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        320
+      ],
+      "id": "f58fe698-ad35-43f0-b13f-bbeba8cc3c41",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zen-footwear-chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "7d86c05f-5929-4952-b15b-ab4b12913624",
+      "name": "Webhook",
+      "webhookId": "becea671-4425-4717-8e02-818176d5fb2f"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {
+          "responseHeaders": {
+            "entries": []
+          },
+          "enableStreaming": true
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        576,
+        0
+      ],
+      "id": "5735d4fa-e3f1-47c4-b8cc-6af10a0c27ec",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        656,
+        416
+      ],
+      "id": "d65c6718-9027-4472-8952-3375316f1d53",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "pP85nbFQmVXPbcqy",
+          "name": "Cohere account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mahushikdar2020.app.n8n.cloud/webhook/zen-footwear-chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"chatInput\": \"What sizes are available for Zen Street Loafer?\",\n  \"sessionId\": \"user_123\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        784,
+        0
+      ],
+      "id": "4f9644ce-608d-47fa-9a06-b1d2e50cd185",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "content": "ZEN Footwear AI Chatbot Workflow :\n\nThis workflow receives customer messages, searches the ZEN Footwear knowledge base, and sends accurate AI replies.\n\n Features :\n\nAI-powered customer support\n\nSmart knowledge search using Qdrant\n\nFast and accurate responses\n\nError handling for smooth performance\n\n\n Problem It Solves :\n\nHelps the chatbot answer customer questions about products, prices, discounts, and policies correctly instead of giving empty or incorrect replies.\n",
+        "height": 384,
+        "width": 336,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "818f2e2e-d131-4acc-9995-a3f974f38f23",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "Wzt0cjErkGwBNuP0",
+    "timezone": "Asia/Dhaka",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "d6aba790-0602-49da-9675-2660f6daff59",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e6fe3cc91d2e75250e1fb7acc8e673cbc132015c1ecf69d29688f37012e82feb"
+  },
+  "id": "Ggqko4fndffJIBl7",
+  "tags": []
+}
