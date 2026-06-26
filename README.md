@@ -4,7 +4,7 @@ A full Retrieval-Augmented Generation (RAG) pipeline that enables businesses to 
 
 ## Demo
 
-[Watch the demo](https://www.youtube.com/watch?v=h10HkO8-b8w)
+[Watch the demo](https://youtu.be/I2vgnuXGfW0?si=HyR7u89UUq6swBK2)
 
 ## How It Works
 
